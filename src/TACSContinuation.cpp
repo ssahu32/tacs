@@ -1,4 +1,5 @@
 #include "TACSContinuation.h"
+#include "TACSToFH5.h"
 
 /*
   Implementation of buckling and frequency analysis and sensitivity
@@ -294,6 +295,7 @@ void TACSContinuation::solve_tangent( TACSMat *mat,
   TACSBVec *tangent = assembler->createVec();
   TACSBVec *update = assembler->createVec();
   TACSBVec *res = assembler->createVec();
+  TACSBVec *r0 = assembler->createVec();
 
   vars->incref();
   old_vars->incref();
@@ -301,6 +303,13 @@ void TACSContinuation::solve_tangent( TACSMat *mat,
   tangent->incref();
   update->incref();
   res->incref();
+  r0->incref();
+
+  double correction_atol = 1e-5;
+
+  // Compute the residual with vars = 0
+  assembler->setVariables(vars);
+  assembler->assembleRes(r0);
 
   TACSContinuationPathMat *path_mat =
     new TACSContinuationPathMat(mat, load, tangent, 0.0);
@@ -347,6 +356,7 @@ void TACSContinuation::solve_tangent( TACSMat *mat,
       // Assemble the residuals at the current point
       assembler->assembleRes(res);
       res->axpy(-lambda, load);
+      res->axpy(-1.0, r0);
 
       TacsScalar res_norm = res->norm();
       if (ksm_print){
@@ -387,6 +397,7 @@ void TACSContinuation::solve_tangent( TACSMat *mat,
 
     // Compute the residual as r(u, lambda) = R(u) - lambda*load
     res->axpy(-lambda, load);
+    res->axpy(-1.0, r0);
 
     // Factor the preconditioner
     pc->factor();
@@ -513,6 +524,7 @@ void TACSContinuation::solve_tangent( TACSMat *mat,
         assembler->setVariables(vars);
         assembler->assembleRes(res);
         res->axpy(-lambda, load);
+        res->axpy(-1.0, r0);
 
         TacsScalar res_norm = res->norm();
         if (ksm_print){
@@ -529,6 +541,10 @@ void TACSContinuation::solve_tangent( TACSMat *mat,
         }
         else if (TacsRealPart(res_norm) <
                  correction_rtol*TacsRealPart(init_res_norm)){
+          fail_flag = 0;
+          break;
+        }
+        else if (TacsRealPart(res_norm) < correction_atol){
           fail_flag = 0;
           break;
         }
@@ -578,6 +594,7 @@ void TACSContinuation::solve_tangent( TACSMat *mat,
   tangent->decref();
   update->decref();
   res->decref();
+  r0->decref();
   path_mat->decref();
 }
 
