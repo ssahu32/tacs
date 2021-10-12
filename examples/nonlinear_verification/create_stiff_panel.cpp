@@ -471,7 +471,7 @@ void write_stiffened_panel_axial( const char * file_name,
 
 int main( int argc, char * argv[] ){
   // int Nx = 45;
-  int Nx = 20;
+  int Nx = 40;
   int nrepeat = 4;
   // double Lx = 450.0;
   // double b = 110.0;
@@ -483,7 +483,7 @@ int main( int argc, char * argv[] ){
   double hs = 0.02;
   // double angle = -15.0/180.0*M_PI;
   double angle = 0;
-  double forced_disp = -0.0045;
+  double forced_disp = -0.0015;
 
   int write_shear_file = 0;
   for ( int k = 0; k < argc; k++ ){

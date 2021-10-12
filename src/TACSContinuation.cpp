@@ -305,7 +305,7 @@ void TACSContinuation::solve_tangent( TACSMat *mat,
   res->incref();
   r0->incref();
 
-  double correction_atol = 1e-5;
+  double correction_atol = 1e-4;
 
   // Compute the residual with vars = 0
   assembler->setVariables(vars);
