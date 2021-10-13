@@ -492,8 +492,8 @@ void TACSContinuation::solve_tangent( TACSMat *mat,
       sprintf(line, "Outer iteration %3d: t: %9.4f dp_ds: %10.4e\n",
               iteration_count, MPI_Wtime() - t0, TacsRealPart(dlambda_ds));
       ksm_print->print(line);
-      sprintf(line, "%5s %9s %10s %10s %10s\n",
-              "Iter", "t", "|R|", "lambda", "|u|");
+      sprintf(line, "%5s %9s %10s %10s %10s %10s %10s\n",
+              "Iter", "t", "|R|", "lambda", "|u|", "dlambda_ds", "delta_s");
       ksm_print->print(line);
     }
 
@@ -522,16 +522,25 @@ void TACSContinuation::solve_tangent( TACSMat *mat,
       for ( int j = 0; j < max_correction_iters; j++ ){
         // Compute the residual at the current value of (u, lambda)
         assembler->setVariables(vars);
+        // if (j > 0 && j % 10 == 0){
+        assembler->assembleJacobian(1.0, 0.0, 0.0, res, mat);
+        pc->factor();
+        // } 
+        // else{
         assembler->assembleRes(res);
+        // }
+        
+        
         res->axpy(-lambda, load);
         res->axpy(-1.0, r0);
 
         TacsScalar res_norm = res->norm();
         if (ksm_print){
           char line[256];
-          sprintf(line, "%5d %9.4f %10.3e %10.3e %10.3e\n",
+          sprintf(line, "%5d %9.4f %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e\n",
                   j, MPI_Wtime() - t0, TacsRealPart(res_norm),
-                  TacsRealPart(lambda), TacsRealPart(vars->norm()));
+                  TacsRealPart(lambda), TacsRealPart(vars->norm()),
+                  TacsRealPart(dlambda_ds), TacsRealPart(delta_s));
           ksm_print->print(line);
         }
 
@@ -560,6 +569,14 @@ void TACSContinuation::solve_tangent( TACSMat *mat,
         TacsScalar delta_lambda = path_mat->extract(temp);
         lambda = lambda - delta_lambda;
         vars->axpy(-1.0, temp);
+
+        if (ksm_print){
+          char line[256];
+          sprintf(line,
+                  "delta_lambda = %10.3e\n",
+                  TacsRealPart(delta_lambda));
+          ksm_print->print(line);
+        }
       }
 
       // The corrector has failed. Try again with a smaller step size.
