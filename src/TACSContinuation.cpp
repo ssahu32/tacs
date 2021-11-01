@@ -88,7 +88,7 @@ void TACSContinuationPathMat::resetConstraint( TacsScalar s ){
 // Multiply x <-- Qx, return the value of the n+1-th row
 TacsScalar TACSContinuationPathMat::extract( TACSVec * x ){
   TacsScalar tTx = t->dot(x);
-  x->axpy(-(2.0*tTx)/(tn*tn), t);
+  x->axpy(-(2.0*tTx)/(tn*tn), t); // Makes x perpendicular to tangent
   return -(2.0*wn*tTx)/(tn*tn);
 }
 
@@ -408,33 +408,42 @@ void TACSContinuation::solve_tangent( TACSMat *mat,
     // Set the tolerances for the tangent computation
     ksm->setTolerances(tangent_rtol, tangent_atol);
 
-    if (iteration_count == 0){
-      // Compute the initial tangent vector to the solution path
-      ksm->setOperators(mat, pc);
-      ksm->solve(load, tangent);
+    // if (iteration_count == 0){
+    //   // Compute the initial tangent vector to the solution path
+    //   ksm->setOperators(mat, pc);
+    //   ksm->solve(load, tangent);
 
-      TacsScalar tnorm = tangent->norm();
-      dlambda_ds = 1.0/sqrt(1.0 + tnorm*tnorm);
+    //   TacsScalar tnorm = tangent->norm();
+    //   dlambda_ds = 1.0/sqrt(1.0 + tnorm*tnorm);
 
-      tangent->scale(dlambda_ds);
-    }
-    else {
-      // Set the ksm to use the path_mat object
-      ksm->setOperators(path_mat, pc);
+    //   tangent->scale(dlambda_ds);
+    // }
+    // else {
+    //   // Set the ksm to use the path_mat object
+    //   ksm->setOperators(path_mat, pc);
 
-      // compute res = -(Kmat*tangent - load*dlambda_ds)
-      mat->mult(tangent, res);
-      res->axpy(-dlambda_ds, load);
-      res->scale(-1.0);
+    //   // compute res = -(Kmat*tangent - load*dlambda_ds)
+    //   mat->mult(tangent, res);
+    //   res->axpy(-dlambda_ds, load);
+    //   res->scale(-1.0);
 
-      // Set new values back into the matrix
-      path_mat->resetConstraint(dlambda_ds);
-      ksm->solve(res, temp);
-      dlambda_ds += path_mat->extract(temp);
+    //   // Set new values back into the matrix
+    //   path_mat->resetConstraint(dlambda_ds);
+    //   ksm->solve(res, temp);
+    //   dlambda_ds += path_mat->extract(temp);
 
-      // tangent = tangent + temp
-      tangent->axpy(1.0, temp);
-    }
+    //   // tangent = tangent + temp
+    //   tangent->axpy(1.0, temp);
+    // }
+
+    // Compute the initial tangent vector to the solution path
+    ksm->setOperators(mat, pc);
+    ksm->solve(load, tangent);
+
+    TacsScalar tnorm = tangent->norm();
+    dlambda_ds = 1.0/sqrt(1.0 + tnorm*tnorm);
+
+    tangent->scale(dlambda_ds);
 
     // Save values and update the iteration counter
     lambda_history[iteration_count] = lambda;
@@ -570,13 +579,13 @@ void TACSContinuation::solve_tangent( TACSMat *mat,
         lambda = lambda - delta_lambda;
         vars->axpy(-1.0, temp);
 
-        if (ksm_print){
-          char line[256];
-          sprintf(line,
-                  "delta_lambda = %10.3e\n",
-                  TacsRealPart(delta_lambda));
-          ksm_print->print(line);
-        }
+        // if (ksm_print){
+        //   char line[256];
+        //   sprintf(line,
+        //           "delta_lambda = %10.3e\n",
+        //           TacsRealPart(delta_lambda));
+        //   ksm_print->print(line);
+        // }
       }
 
       // The corrector has failed. Try again with a smaller step size.

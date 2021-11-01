@@ -31,7 +31,7 @@ int main( int argc, char *argv[] ){
   TacsScalar axis[] = {1.0, 0.0, 0.0};
   TACSShellTransform *transform = new TACSShellRefAxisTransform(axis);
 
-  TacsScalar t = 0.025;
+  TacsScalar t = 0.001;
   int t_num = 0;
   TACSShellConstitutive *con = new TACSIsoShellConstitutive(props, t, t_num);
 
@@ -97,8 +97,8 @@ int main( int argc, char *argv[] ){
   int freq = 1;
   KSMPrint *ksm_print = new KSMPrintStdout("KSM", rank, freq);
 
-  TACSContinuation *cont = new TACSContinuation(assembler, 100, 50, 6, 1e-8, 1e3, 1e-3, 1e-30, 1e-8, 1e-30);
-  cont->solve_tangent(mat, pc, ksm, f, 0, 0.005, ksm_print);
+  TACSContinuation *cont = new TACSContinuation(assembler, 200, 50, 6, 1e-8, 1e3, 1e-3, 1e-30, 1e-8, 1e-30);
+  cont->solve_tangent(mat, pc, ksm, f, 0, 0.001, ksm_print);
 
   // Output for visualization
   ElementType etype = TACS_BEAM_OR_SHELL_ELEMENT;
