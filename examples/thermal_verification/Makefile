@@ -2,20 +2,13 @@ include ../../Makefile.in
 include ../../TACS_Common.mk
 
 OBJS = create_stiff_panel.o \
-	stiffened_panel_nonlinear.o \
-	cyl_nonlinear.o \
-	continuation.o
-	# create_skewed_plate.o
-	# stiffened_panel.o \
-	# skewed_plate.o
+	thermal_linear.o \
+	thermal_nonlinear.o
 
 default: ${OBJS}
 	${CXX} -o create_stiff_panel create_stiff_panel.o ${TACS_LD_FLAGS}
-	${CXX} -o stiffened_panel_nonlinear stiffened_panel_nonlinear.o ${TACS_LD_FLAGS}
-	${CXX} -o cyl_nonlinear cyl_nonlinear.o ${TACS_LD_FLAGS}
-	# ${CXX} -o create_skewed_plate create_skewed_plate.o ${TACS_LD_FLAGS}
-	# ${CXX} -o stiffened_panel stiffened_panel.o ${TACS_LD_FLAGS}
-	# ${CXX} -o skewed_plate skewed_plate.o ${TACS_LD_FLAGS}
+	${CXX} -o thermal_linear thermal_linear.o ${TACS_LD_FLAGS}
+	${CXX} -o thermal_nonlinear thermal_nonlinear.o ${TACS_LD_FLAGS}
 
 debug: TACS_CC_FLAGS=${TACS_DEBUG_CC_FLAGS}
 debug: default
@@ -24,33 +17,28 @@ complex: TACS_DEF="-DTACS_USE_COMPLEX"
 complex: default
 
 clean:
-	rm -f *.o create_stiff_panel create_skewed_plate stiffened_panel skewed_plate stiffened_panel_nonlinear cyl_nonlinear
+	rm -f *.o create_stiff_panel thermal_linear thermal_nonlinear
+	rm -f *.bdf axial_stiffened_panel
 
 test: default
 	./create_stiff_panel
-	# ./create_skewed_plate
-	./stiffened_panel_nonlinear
-	./cyl_nonlinear
+	./thermal_linear
+	./thermal_nonlinear
 	mpirun -np 4 ./stiffened_panel
-	# mpirun -np 4 ./skewed_plate
-	mpirun -np 4 ./stiffened_panel_nonlinear
-	mpirun -np 4 ./cyl_nonlinear
+	mpirun -np 4 ./thermal_linear
+	mpirun -np 4 ./thermal_nonlinear
 
 test_complex: default
 	./create_stiff_panel
-	# ./create_skewed_plate
-	mpirun -np 4 ./stiffened_panel_nonlinear
 	mpirun -np 4 ./stiffened_panel
-	mpirun -np 4 ./cyl_nonlinear
-	# mpirun -np 4 ./skewed_plate
-	mpirun -np 4 ./stiffened_panel_nonlinear
-	mpirun -np 4 ./cyl_nonlinear
-
-cyl_nonlinear: cyl_nonlinear.o
-	${CXX} -o cyl_nonlinear cyl_nonlinear.o ${TACS_LD_FLAGS}
+	mpirun -np 4 ./thermal_linear
+	mpirun -np 4 ./thermal_nonlinear
 
 create_stiff_panel: create_stiff_panel.o
 	${CXX} -o create_stiff_panel create_stiff_panel.o ${TACS_LD_FLAGS}
 
-continuation: continuation.o
-	${CXX} -o continuation continuation.o ${TACS_LD_FLAGS}
+thermal_linear: thermal_linear.o
+	${CXX} -o thermal_linear thermal_linear.o ${TACS_LD_FLAGS}
+
+thermal_nonlinear: thermal_nonlinear.o
+	${CXX} -o thermal_nonlinear thermal_nonlinear.o ${TACS_LD_FLAGS}
