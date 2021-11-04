@@ -331,21 +331,19 @@ void write_stiffened_panel_axial( const char * file_name,
       if (j == 0){
         // Surface base edge corner 1
         fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
-                // "SPC", 1, node, "12345", 0.0); // x, y, z, rotx, roty
-                "SPC", 1, node, "123", 0.0); // x, y, z
+                "SPC", 1, node, "1234", 0.0); // x, y, z
+        // To apply temp BC
+        // fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
+        //         "SPC", 1, node, "4", 1.0); // x, y, z
       } else if (j == ny-1) {
         // Surface base edge corner 2
         fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
-                // "SPC", 1, node, "12345", 0.0); // x, y, z, rotx, roty
-                // "SPC", 1, node, "13", 0.0); // x, z
-                "SPC", 1, node, "123", 0.0); // x, y, z
+                "SPC", 1, node, "1234", 0.0); // x, y, z
       }
       else {
         // Surface base edge
         fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
-                // "SPC", 1, node, "1345", 0.0); // x, z, rotx, roty
-                // "SPC", 1, node, "1", 0.0); // x
-                "SPC", 1, node, "123", 0.0); // x, y, z
+                "SPC", 1, node, "1234", 0.0); // x, y, z
       }
     }
 
@@ -354,8 +352,7 @@ void write_stiffened_panel_axial( const char * file_name,
         // Stiffener base edge
         int node = stiff_node_nums[jj*nx*nhs + j];
         fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
-                // "SPC", 1, node, "1", 0.0); // x
-                "SPC", 1, node, "123", 0.0); // x, y, z
+                "SPC", 1, node, "1234", 0.0); // x, y, z
       }
     }
 
@@ -363,25 +360,16 @@ void write_stiffened_panel_axial( const char * file_name,
     for ( int j = 0; j < ny; j++ ){
       // Surface free edge
       int node = surf_node_nums[ny*(nx-1) + j];
-      // fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
-      //         "SPC", 1, node, "345", -30.0); // z, rotx, roty
-      // fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
-              // "SPC", 1, node, "1", forced_disp); // x
-              // Non-zer dirichelt BC
       fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
-              // "SPC", 1, node, "1", 0.0); // x
-              "SPC", 1, node, "123", 0.0); // x, y, z
+              "SPC", 1, node, "1234", 0.0); // x, y, z
     }
 
     for ( int jj = 0; jj < nrepeat; jj++ ){
       for ( int j = 0; j < nhs; j++ ){
         // Stiffener free edge
         int node = stiff_node_nums[jj*nx*nhs + nhs*(nx-1) + j];
-        // fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
-                // "SPC", 1, node, "1", forced_disp); // u
         fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
-                // "SPC", 1, node, "1", 0.0); // x
-                "SPC", 1, node, "123", 0.0); // x, y, z
+                "SPC", 1, node, "1234", 0.0); // x, y, z
       }
     }
 

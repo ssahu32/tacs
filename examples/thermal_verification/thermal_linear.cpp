@@ -70,7 +70,10 @@ int main( int argc, char *argv[] ){
   res->incref();
   mat->incref();
 
-  // Apply loads
+  //////////////////////////////////////////////////////////////////
+
+  // For applied heat flux
+
   TacsScalar *force_vals;
   int size = f->getArray(&force_vals);
   for ( int k = 3; k < size; k += assembler->getVarsPerNode() ){
@@ -78,8 +81,27 @@ int main( int argc, char *argv[] ){
   }
   assembler->applyBCs(f);
 
-  // TACSBVec *f = assembler->createVec(); // loads
+  //////////////////////////////////////////////////////////////////
+
+  // For applied temperature
+
+  TACSBVec *f = assembler->createVec(); // loads
+  assembler->setBCs(f);
+
+  //////////////////////////////////////////////////////////////////
+
+  // For both
+
+  // TacsScalar *force_vals;
+  // int size = f->getArray(&force_vals);
+  // for ( int k = 3; k < size; k += assembler->getVarsPerNode() ){
+  //   force_vals[k] -= 1;
+  // }
+
   // assembler->setBCs(f);
+
+
+  //////////////////////////////////////////////////////////////////
 
 
 
