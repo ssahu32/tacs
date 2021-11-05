@@ -3,18 +3,36 @@ import os
 from tacs import pytacs, elements, constitutive, functions, problems
 from pytacs_analysis_base_test import PyTACSTestCase
 
-'''
-The nominal case is a 1m x 1m flat plate under two load cases: 
-a 10 kN point force at center and a 100kPa pressure applied to the surface. The
+""""
+The nominal case is a 1m x 1m flat plate under three load cases: 
+a 1 MN point distributed force, a 10MPa pressure, and a 1 MPa traction. The
 perimeter of the plate is fixed in all 6 degrees of freedom. The plate comprises
-900 CQUAD4 elements and test KSFailure, StructuralMass, and Compliance functions and sensitivities
-'''
+100 CQUAD4 elements and test KSFailure, KSDisplacement, StructuralMass, and Compliance functions and sensitivities
+
+The plate is broken up into 4 components in the bdf file with the names 'PLATE.00', 'PLATE.01', etc.
+The plate domains ordered as below:
+           |
+    3      |       2
+           |
+-----------|------------
+           |
+   0       |      1
+           |
+We use pyTACS selectCompIDs method to apply loads and eval functions specifically to each quadrant
+"""
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-bdf_file = os.path.join(base_dir, "./input_files/plate.bdf")
+bdf_file = os.path.join(base_dir, "./input_files/partitioned_plate.bdf")
 
-FUNC_REFS = {'point_load_compliance': 683.8571611640772, 'point_load_ks_vmfailure': 0.5757488025913641, 'point_load_mass': 12.5,
-             'pressure_compliance': 4679.345460326432, 'pressure_ks_vmfailure': 1.2938623156872926, 'pressure_mass': 12.5}
+FUNC_REFS = {'load_compliance': 155663.05822283815, 'load_ks_disp': 38.52680169648463,
+             'load_ks_vmfailure': 20.170707090964743, 'load_mass': 0.78125,
+
+             'pressure_compliance': 73362.09834795444, 'pressure_ks_disp': 21.6030915592335,
+             'pressure_ks_vmfailure': 16.464960170504657, 'pressure_mass': 0.78125,
+
+             'traction_compliance': 735.6034203895599, 'traction_ks_disp': 1.821814969038552,
+             'traction_ks_vmfailure': 0.7396840173568021, 'traction_mass': 0.78125}
+
 
 # KS function weight
 ksweight = 10.0
@@ -84,11 +102,20 @@ class ProblemTest(PyTACSTestCase.PyTACSTest):
         Create a list of functions to be tested and their reference values for the problem
         """
         # Add Functions
-        fea_solver.addFunction('mass', functions.StructuralMass)
+        # Evaluate mass of bottom left quadrant of plate
+        compIDs = fea_solver.selectCompIDs(include='PLATE.00')
+        fea_solver.addFunction('mass', functions.StructuralMass, compIDs=compIDs)
+        # Evaluate failure of bottom right quadrant of plate
+        compIDs = fea_solver.selectCompIDs(include='PLATE.01')
         fea_solver.addFunction('ks_vmfailure', functions.KSFailure,
-                               ksWeight=ksweight)
+                               ksWeight=ksweight, compIDs=compIDs)
+        # Evaluate displacement of upper left quadrant of plate
+        compIDs = fea_solver.selectCompIDs(include='PLATE.03')
+        fea_solver.addFunction('ks_disp', functions.KSDisplacement,
+                               ksWeight=ksweight, direction= [100.0, 100.0, 100.0], compIDs=compIDs)
+        # Evaluate compliance of entire plate
         fea_solver.addFunction('compliance', functions.Compliance)
-        func_list = ['mass', 'ks_vmfailure', 'compliance']
+        func_list = ['mass', 'ks_vmfailure', 'ks_disp', 'compliance']
         return func_list, FUNC_REFS
 
     def setup_tacs_problems(self, fea_solver):
@@ -97,17 +124,25 @@ class ProblemTest(PyTACSTestCase.PyTACSTest):
         """
         tacs_probs = []
 
-        # Add point force to node 81 (center of plate)
-        sp = problems.StaticProblem(name='point_load')
-        F = np.array([0.0, 0.0, 1e4, 0.0, 0.0, 0.0])
-        fea_solver.addLoadToNodes(sp, 81, F, nastranOrdering=True)
+        # Distribute point force over all nodes in bottom left quadrant of plate
+        sp = problems.StaticProblem(name='load')
+        F = np.array([0.0, 0.0, 1e6, 0.0, 0.0, 0.0])
+        compIDs = fea_solver.selectCompIDs(include='PLATE.00')
+        fea_solver.addLoadToComponents(sp, compIDs, F)
         tacs_probs.append(sp)
 
-        # Add pressure to entire plate
+        # Add pressure to bottom right quadrant of plate
         sp = problems.StaticProblem(name='pressure')
-        P = 100e3  # Pa
-        compIDs = fea_solver.selectCompIDs(include='PLATE')
+        P = 100e5  # Pa
+        compIDs = fea_solver.selectCompIDs(include='PLATE.01')
         fea_solver.addPressureToComponents(sp, compIDs, P)
+        tacs_probs.append(sp)
+
+        # Add traction to upper right quadrant of plate
+        sp = problems.StaticProblem(name='traction')
+        trac = [1e6, 1e6, 1e6]  # N/m^2
+        compIDs = fea_solver.selectCompIDs(include='PLATE.02')
+        fea_solver.addTractionToComponents(sp, compIDs, trac)
         tacs_probs.append(sp)
 
         return tacs_probs

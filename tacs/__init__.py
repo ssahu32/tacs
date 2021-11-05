@@ -45,9 +45,9 @@ def get_libraries():
 
     return lib_dirs, libs
 
-# Try importing the python extension modules - both real and complex
-# They won't work unless you have scipy hence the try statements.
 
+# Import pytacs modules
 from . import pytacs
 from .pytacs import pyTACS
-__all__.extend(['pytacs', 'pyTACS'])
+from . import problems
+__all__.extend(['pytacs', 'pyTACS', 'problems'])
