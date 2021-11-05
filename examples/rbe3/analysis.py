@@ -36,6 +36,8 @@ FEASolver = pyTACS(bdfFile, comm, options=structOptions)
 # Set up constitutive objects and elements
 FEASolver.createTACSAssembler()
 
+# assmebler = FEASolver.assembler
+
 # Read in forces from BDF and create tacs static problems
 SPs = FEASolver.createTACSProbsFromBDF()
 
