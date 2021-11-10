@@ -11,7 +11,8 @@
 int main( int argc, char *argv[] ){
   MPI_Init(&argc, &argv);
 
-  const char *filename = "axial_stiffened_panel.bdf";
+  // const char *filename = "axial_stiffened_panel.bdf";
+  const char *filename = "curved_panel.bdf";
 
   // Get the rank
   MPI_Comm comm = MPI_COMM_WORLD;
@@ -74,18 +75,18 @@ int main( int argc, char *argv[] ){
 
   // For applied heat flux
 
-  TacsScalar *force_vals;
-  int size = f->getArray(&force_vals);
-  for ( int k = 3; k < size; k += assembler->getVarsPerNode() ){
-    force_vals[k] += 1;
-  }
-  assembler->applyBCs(f);
+  // TacsScalar *force_vals;
+  // int size = f->getArray(&force_vals);
+  // for ( int k = 3; k < size; k += assembler->getVarsPerNode() ){
+  //   force_vals[k] += 1;
+  // }
+  // assembler->applyBCs(f);
 
   //////////////////////////////////////////////////////////////////
 
-  // For applied temperature
+  // // For applied temperature
 
-  TACSBVec *f = assembler->createVec(); // loads
+  // TACSBVec *f = assembler->createVec(); // loads
   assembler->setBCs(f);
 
   //////////////////////////////////////////////////////////////////
@@ -134,7 +135,7 @@ int main( int argc, char *argv[] ){
                     TACS_OUTPUT_EXTRAS);
   TACSToFH5 *f5 = new TACSToFH5(assembler, etype, write_flag);
   f5->incref();
-  f5->writeToFile("thermal_linear.f5");
+  f5->writeToFile("thermal_linear_curved.f5");
 
   assembler->decref();
   linear_shell->decref();
