@@ -308,14 +308,14 @@ void write_stiffened_panel_axial( const char * file_name,
       fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
               "SPC", 1, node, "123", 0.0); // x, y, z
       fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
-              "SPC", 1, node, "4", 25.0); // temp
+              "SPC", 1, node, "4", 0.0); // temp
     }
     else {
       // Surface base edge
       fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
               "SPC", 1, node, "13", 0.0); // x, z
       fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
-              "SPC", 1, node, "4", 25.0); // temp
+              "SPC", 1, node, "4", 0.0); // temp
     }
   }
 
@@ -325,7 +325,7 @@ void write_stiffened_panel_axial( const char * file_name,
     fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
               "SPC", 1, node, "13", 0.0); // x, z
       fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
-              "SPC", 1, node, "4", 25.0); // temp
+              "SPC", 1, node, "4", 0.0); // temp
   }
   
   for (int i = 3*nx/8; i < 5*nx/8; i++){
@@ -333,9 +333,61 @@ void write_stiffened_panel_axial( const char * file_name,
       // Middle 50%
       int node = surf_node_nums[ny*(i-1) + j];
       fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
-              "SPC", 1, node, "4", 50.0); // temp
+              "SPC", 1, node, "4", 25.0); // temp
     }
   }
+
+  ////////////////////////////////////////////////////////////////////////////
+  // Case 3
+  // Temperature BCs. Cold at ends. Hot in center section
+
+  // for ( int j = 0; j < ny; j++ ){
+  //   int node = surf_node_nums[j];
+  //   if (j == 0){
+  //     // Surface base edge corner 1
+  //     fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
+  //             "SPC", 1, node, "123", 0.0); // x, y, z
+  //   }
+  //   else {
+  //     // Surface base edge
+  //     fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
+  //             "SPC", 1, node, "13", 0.0); // x, z
+  //   }
+  // }
+
+  // for ( int j = 0; j < ny; j++ ){
+  //   // Surface free edge
+  //   int node = surf_node_nums[ny*(nx-1) + j];
+  //   fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
+  //             "SPC", 1, node, "13", 0.0); // x, z
+  // }
+
+  // for (int i = 3*nx/8; i < 5*nx/8; i++){
+  //   for ( int j = 0; j < ny; j++ ){
+  //     // Middle 50%
+  //     int node = surf_node_nums[ny*(i-1) + j];
+  //     fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
+  //             "SPC", 1, node, "4", 50.0); // temp
+  //   }
+  // }
+
+  // for (int i = 0*nx/8; i < 3*nx/8; i++){
+  //   for ( int j = 0; j < ny; j++ ){
+  //     // First 25%
+  //     int node = surf_node_nums[ny*(i-1) + j];
+  //     fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
+  //             "SPC", 1, node, "4", 0.0); // temp
+  //   }
+  // }
+
+  // for (int i = 5*nx/8; i < 8*nx/8; i++){
+  //   for ( int j = 0; j < ny; j++ ){
+  //     // First 25%
+  //     int node = surf_node_nums[ny*(i-1) + j];
+  //     fprintf(fp, "%-8s%8d%8d%8s%8.6f\n",
+  //             "SPC", 1, node, "4", 0.0); // temp
+  //   }
+  // }
 
   ////////////////////////////////////////////////////////////////////////////
 
@@ -349,7 +401,7 @@ void write_stiffened_panel_axial( const char * file_name,
 int main( int argc, char * argv[] ){
   int Nx = 40;
   int nrepeat = 4;
-  double Lx = 0.5;
+  double Lx = 0.25;
   double b = 0.125;
   double wb = 0;
   double hs = 0.02;
