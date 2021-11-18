@@ -1,57 +1,99 @@
-# A demonstration of basic functions of the Python interface for TACS,
-# this example goes through the process of setting up the using the
-# tacs assembler directly as opposed to using the pyTACS user interface (see analysis.py):
-# loading a mesh, creating elements, evaluating functions, solution, and output
-from __future__ import print_function   
+"""
+This wingbox is a simplified version of the one of the University of Michigan uCRM-9.
+We use a couple of pyTACS load generating methods to model various wing loads under cruise.
+The script runs the structural analysis, evaluates the wing mass and von misses failure index
+and computes sensitivities with respect to wingbox thicknesses and node xyz locations.
+"""
+# ==============================================================================
+# Standard Python modules
+# ==============================================================================
+from __future__ import print_function
+import os
 
-# Import necessary libraries
+# ==============================================================================
+# External Python modules
+# ==============================================================================
+from pprint import pprint
 import numpy as np
 from mpi4py import MPI
-from tacs import TACS, elements, constitutive, functions
 
-# Load structural mesh from BDF file
+# ==============================================================================
+# Extension modules
+# ==============================================================================
+from tacs import TACS, functions, constitutive, elements, pyTACS, problems
+
 tacs_comm = MPI.COMM_WORLD
-struct_mesh = TACS.MeshLoader(tacs_comm)
-struct_mesh.scanBDFFile("nastran_CAPS.dat")
 
-# Set constitutive properties
-rho = 2500.0 # density, kg/m^3
-E = 70e9 # elastic modulus, Pa
-nu = 0.3 # poisson's ratio
-kcorr = 5.0 / 6.0 # shear correction factor
-ys = 350e6 # yield stress, Pa
-min_thickness = 0.002
-max_thickness = 0.20
-thickness = 0.02
+# Instantiate FEASolver
+structOptions = {
+    'printtiming':True,
+}
 
-# Loop over components, creating stiffness and element object for each
-num_components = struct_mesh.getNumComponents()
-for i in range(num_components):
-    descriptor = struct_mesh.getElementDescript(i)
+bdfFile = os.path.join(os.path.dirname(__file__), 'nastran_CAPS.dat')
+FEASolver = pyTACS(bdfFile, options=structOptions, comm=tacs_comm)
+
+# Material properties
+rho = 2780.0        # density kg/m^3
+E = 73.1e9          # Young's modulus (Pa)
+nu = 0.33           # Poisson's ratio
+kcorr = 5.0/6.0     # shear correction factor
+ys = 324.0e6        # yield stress
+
+# Shell thickness
+t = 0.01            # m
+tMin = 0.002        # m
+tMax = 0.05         # m
+
+# Callback function used to setup TACS element objects and DVs
+def elemCallBack(dvNum, compID, compDescript, elemDescripts, globalDVs, **kwargs):
     # Setup (isotropic) property and constitutive objects
     prop = constitutive.MaterialProperties(rho=rho, E=E, nu=nu, ys=ys)
     # Set one thickness dv for every component
-    stiff = constitutive.IsoShellConstitutive(prop, t=thickness, tMin=min_thickness, tMax=max_thickness, tNum=i)
+    con = constitutive.IsoShellConstitutive(prop, t=t, tNum=dvNum)
 
-    element = None
-    transform = None
-    if descriptor in ["CQUAD", "CQUADR", "CQUAD4"]:
-        element = elements.Quad4Shell(transform, stiff)
-    struct_mesh.setElement(i, element)
+    # # Define reference axis for local shell stresses
+    # if 'SKIN' in compDescript: # USKIN + LSKIN
+    #     sweep = 35.0 / 180.0 * np.pi
+    #     refAxis = np.array([np.sin(sweep), np.cos(sweep), 0])
+    # else: # RIBS + SPARS + ENGINE_MOUNT
+    #     refAxis = np.array([0.0, 0.0, 1.0])
 
-# Create tacs assembler object from mesh loader
-tacs = struct_mesh.createTACS(6)
+    refAxis = np.array([1.0, 0.0, 0.0])
+
+    # For each element type in this component,
+    # pass back the appropriate tacs element object
+    elemList = []
+    transform = elements.ShellRefAxisTransform(refAxis)
+    for elemDescript in elemDescripts:
+        if elemDescript in ['CQUAD4', 'CQUADR']:
+            elem = elements.Quad4Shell(transform, con)
+        elif elemDescript in ['CTRIA3', 'CTRIAR']:
+            elem = elements.Tri3Shell(transform, con)
+        else:
+            print("Uh oh, '%s' not recognized" % (elemDescript))
+        elemList.append(elem)
+
+    # Add scale for thickness dv
+    scale = [100.0]
+    return elemList, scale
+
+# Set up elements and TACS assembler
+# assembler = FEASolver.assembler
+FEASolver.createTACSAssembler(elemCallBack)
+# assembler = FEASolver.assembler
+tacs = FEASolver.assembler
 
 # Create the KS Function
 ksWeight = 100.0
-funcs = [functions.KSFailure(tacs, ksWeight=ksWeight)]
-# funcs = [functions.StructuralMass(tacs)]
+# funcs = [functions.KSFailure(tacs, ksWeight=ksWeight)]
+funcs = [functions.StructuralMass(tacs)]
 # funcs = [functions.Compliance(tacs)]
 
 # Get the design variable values
 x = tacs.createDesignVec()
 x_array = x.getArray()
 tacs.getDesignVars(x)
+print('x_array:      ', x_array)
 
 # Get the node locations
 X = tacs.createNodeVec()
@@ -88,6 +130,7 @@ tacs.setVariables(ans)
 
 # Evaluate the function
 fvals1 = tacs.evalFunctions(funcs)
+print('fvals1:      ', fvals1)
 
 # Solve for the adjoint variables
 adjoint = tacs.createVec()
@@ -194,9 +237,11 @@ if tacs_comm.rank == 0:
     print('Rel err: ', (result - fd[0])/result)
 
 # Output for visualization 
-flag = (TACS.OUTPUT_NODES |
+flag = (TACS.OUTPUT_CONNECTIVITY |
+        TACS.OUTPUT_NODES |
         TACS.OUTPUT_DISPLACEMENTS |
         TACS.OUTPUT_STRAINS |
+        TACS.OUTPUT_STRESSES |
         TACS.OUTPUT_EXTRAS)
 f5 = TACS.ToFH5(tacs, TACS.BEAM_OR_SHELL_ELEMENT, flag)
-f5.writeToFile('caps2_output.f5')
+f5.writeToFile('caps3_output.f5')
