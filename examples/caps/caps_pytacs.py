@@ -29,7 +29,7 @@ structOptions = {
     'printtiming':True,
 }
 
-bdfFile = os.path.join(os.path.dirname(__file__), 'nastran_CAPS.dat')
+bdfFile = os.path.join(os.path.dirname(__file__), 'nastran_CAPS1.dat')
 FEASolver = pyTACS(bdfFile, options=structOptions, comm=tacs_comm)
 
 # Material properties
@@ -40,12 +40,21 @@ kcorr = 5.0/6.0     # shear correction factor
 ys = 324.0e6        # yield stress
 
 # Shell thickness
-t = 0.01            # m
+# t = 0.01            # m
+tarray = np.array([0.01, 0.05])
 tMin = 0.002        # m
 tMax = 0.05         # m
 
 # Callback function used to setup TACS element objects and DVs
 def elemCallBack(dvNum, compID, compDescript, elemDescripts, globalDVs, **kwargs):
+    print('dvNum:          ', dvNum)
+    print('compID:         ', compID)
+    print('compDescript:   ', compDescript)
+    print('elemDescripts:  ', elemDescripts)
+    print('globalDVs:      ', globalDVs)
+    print('kwargs:         ', kwargs)
+
+    t = tarray[dvNum]
     # Setup (isotropic) property and constitutive objects
     prop = constitutive.MaterialProperties(rho=rho, E=E, nu=nu, ys=ys)
     # Set one thickness dv for every component
@@ -85,15 +94,15 @@ tacs = FEASolver.assembler
 
 # Create the KS Function
 ksWeight = 100.0
-# funcs = [functions.KSFailure(tacs, ksWeight=ksWeight)]
-funcs = [functions.StructuralMass(tacs)]
+funcs = [functions.KSFailure(tacs, ksWeight=ksWeight)]
+# funcs = [functions.StructuralMass(tacs)]
 # funcs = [functions.Compliance(tacs)]
 
 # Get the design variable values
 x = tacs.createDesignVec()
 x_array = x.getArray()
 tacs.getDesignVars(x)
-print('x_array:      ', x_array)
+print('x_DesignVars:      ', x_array)
 
 # Get the node locations
 X = tacs.createNodeVec()
@@ -244,4 +253,4 @@ flag = (TACS.OUTPUT_CONNECTIVITY |
         TACS.OUTPUT_STRESSES |
         TACS.OUTPUT_EXTRAS)
 f5 = TACS.ToFH5(tacs, TACS.BEAM_OR_SHELL_ELEMENT, flag)
-f5.writeToFile('caps3_output.f5')
+f5.writeToFile('output.f5')
